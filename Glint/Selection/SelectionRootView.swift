@@ -18,6 +18,16 @@ struct SelectionRootView: View {
                 ctx.fill(path, with: .color(.black.opacity(0.4)), style: FillStyle(eoFill: true))
             }
             .allowsHitTesting(false)
+            // 悬停高亮（仅 picking 阶段）
+            if model.phase == .picking, let hover = model.hoverRect, hover.intersects(capture.frame) {
+                let h = local(hover)
+                Rectangle()
+                    .strokeBorder(Color.accentColor, lineWidth: 2)
+                    .background(Color.accentColor.opacity(0.12))
+                    .frame(width: h.width, height: h.height)
+                    .offset(x: h.minX, y: h.minY)
+                    .allowsHitTesting(false)
+            }
             // 选区边框 + 尺寸角标
             if model.selection.width > 0 {
                 let sel = local(model.selection)
@@ -46,7 +56,17 @@ struct SelectionRootView: View {
                         model.updateDrag(to: g)
                     }
                 }
-                .onEnded { _ in if model.phase == .picking { model.endDrag() } }
+                .onEnded { v in
+                    guard model.phase == .picking else { return }
+                    let moved = hypot(v.translation.width, v.translation.height)
+                    if moved < 3, let hover = model.hoverRect {   // 视为单击：采纳悬停区域
+                        model.selection = Geometry.clamped(hover, to: model.displayBounds)
+                        model.dragOrigin = nil
+                        model.phase = .adjusting
+                    } else {
+                        model.endDrag()
+                    }
+                }
         )
         .ignoresSafeArea()
     }

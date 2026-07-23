@@ -11,6 +11,9 @@ final class SelectionController {
     private var captures: [DisplayCapture] = []
     private var model: SelectionModel?
     private var keyMonitor: Any?
+    private var hoverTask: Task<Void, Never>?
+    private let windowDetector = WindowDetector()
+    private let elementDetector = ElementDetector()
 
     func begin() {
         guard panels.isEmpty else { return }   // 幂等
@@ -48,6 +51,14 @@ final class SelectionController {
         NSApp.activate(ignoringOtherApps: true)
         NSCursor.crosshair.set()
 
+        model.smartMode = ElementDetector.trusted ? .element : .window
+        hoverTask = Task { [weak self] in
+            while !Task.isCancelled {
+                self?.updateHover()
+                try? await Task.sleep(for: .milliseconds(33))
+            }
+        }
+
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             assert(Thread.isMainThread, "keyMonitor closure must run on main thread")
             return (self?.handleKey(event) == true) ? nil : event
@@ -67,6 +78,8 @@ final class SelectionController {
         case 36, 76:                                          // Return / Enter
             if model.phase == .adjusting { finishWithSelection() }
             return true
+        case 49:                                              // Space：循环模式
+            model.cycleMode(); return true
         case 123: model.nudge(dx: -step, dy: 0); return true  // ←
         case 124: model.nudge(dx: step, dy: 0); return true   // →
         case 125: model.nudge(dx: 0, dy: step); return true   // ↓
@@ -90,7 +103,28 @@ final class SelectionController {
 
     private func cancel() { teardown() }
 
+    @MainActor private func updateHover() {
+        guard let model, model.phase == .picking, model.dragOrigin == nil else { return }
+        let primaryHeight = NSScreen.screens.first(where: { $0.frame.origin == .zero })?.frame.height
+            ?? NSScreen.screens.first?.frame.height ?? 800
+        let p = mouseInCG(primaryHeight: primaryHeight)
+        model.cursor = p
+        switch model.smartMode {
+        case .element:
+            model.hoverRect = elementDetector.elementRect(at: p) ?? windowDetector.windowRect(at: p)
+        case .window:
+            model.hoverRect = windowDetector.windowRect(at: p)
+        case .fullscreen:
+            model.hoverRect = captures.first { $0.frame.contains(p) }?.frame
+        }
+        if let hover = model.hoverRect {
+            model.hoverRect = Geometry.clamped(hover, to: captures.first { $0.frame.intersects(hover) }?.frame ?? hover)
+        }
+    }
+
     private func teardown() {
+        hoverTask?.cancel()
+        hoverTask = nil
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
         keyMonitor = nil
         panels.forEach { $0.orderOut(nil) }
