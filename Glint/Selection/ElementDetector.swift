@@ -19,6 +19,8 @@ final class ElementDetector {
         guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &posValue) == .success,
               AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeValue) == .success
         else { return nil }
+        guard CFGetTypeID(posValue) == AXValueGetTypeID(),
+              CFGetTypeID(sizeValue) == AXValueGetTypeID() else { return nil }
         var origin = CGPoint.zero, size = CGSize.zero
         AXValueGetValue(posValue as! AXValue, .cgPoint, &origin)
         AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)

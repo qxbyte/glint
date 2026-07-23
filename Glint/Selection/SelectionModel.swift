@@ -17,7 +17,8 @@ final class SelectionModel {
 
     func cycleMode() {
         let all = SmartMode.allCases
-        smartMode = all[(all.firstIndex(of: smartMode)! + 1) % all.count]
+        guard let idx = all.firstIndex(of: smartMode) else { return }
+        smartMode = all[(idx + 1) % all.count]
     }
 
     func beginDrag(at p: CGPoint) { dragOrigin = p }
