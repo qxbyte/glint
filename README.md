@@ -44,4 +44,3 @@ open build/Build/Products/Debug/Glint.app
 
 ## 文档
 
-设计文档与实现计划位于 Obsidian `07-Ideas/glint/`（不在本仓库内）。
