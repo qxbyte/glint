@@ -43,6 +43,14 @@ struct SelectionRootView: View {
                     .offset(x: sel.minX, y: max(0, sel.minY - 26))
                     .allowsHitTesting(false)
             }
+            // 放大镜（picking 阶段、光标在本屏时显示）
+            if model.phase == .picking, capture.frame.contains(model.cursor) {
+                let c = local(CGRect(origin: model.cursor, size: .zero)).origin
+                MagnifierView(capture: capture, cursor: model.cursor, hex: model.currentHex)
+                    .offset(x: min(c.x + 20, capture.frame.width - 150),
+                            y: min(c.y + 20, capture.frame.height - 170))
+                    .allowsHitTesting(false)
+            }
         }
         .contentShape(Rectangle())
         .gesture(
@@ -58,6 +66,13 @@ struct SelectionRootView: View {
                 }
                 .onEnded { v in
                     guard model.phase == .picking else { return }
+                    // 取色模式：单击复制 HEX 并退出
+                    if model.colorPickMode {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(model.currentHex, forType: .string)
+                        SelectionController.shared.cancelPublic()
+                        return
+                    }
                     let moved = hypot(v.translation.width, v.translation.height)
                     if moved < 3, let hover = model.hoverRect {   // 视为单击：采纳悬停区域
                         model.selection = Geometry.clamped(hover, to: model.displayBounds)

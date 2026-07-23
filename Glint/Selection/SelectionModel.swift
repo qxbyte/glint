@@ -14,6 +14,8 @@ final class SelectionModel {
     var dragOrigin: CGPoint?
     var smartMode: SmartMode = .element
     var hoverRect: CGRect?
+    var colorPickMode: Bool = false
+    var currentHex: String = ""
 
     func cycleMode() {
         let all = SmartMode.allCases

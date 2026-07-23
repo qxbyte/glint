@@ -74,12 +74,13 @@ final class SelectionController {
         guard let model else { return false }
         let step: CGFloat = event.modifierFlags.contains(.shift) ? 10 : 1
         switch event.keyCode {
-        case 53: cancel(); return true                       // Esc
+        case 53: dismiss(); return true                       // Esc
         case 36, 76:                                          // Return / Enter
             if model.phase == .adjusting { finishWithSelection() }
             return true
         case 49:                                              // Space：循环模式
             model.cycleMode(); return true
+        case 8: model.colorPickMode.toggle(); return true      // C：取色模式切换
         case 123: model.nudge(dx: -step, dy: 0); return true  // ←
         case 124: model.nudge(dx: step, dy: 0); return true   // →
         case 125: model.nudge(dx: 0, dy: step); return true   // ↓
@@ -91,17 +92,20 @@ final class SelectionController {
     private func finishWithSelection() {
         guard let model, model.selection.width > 0,
               let capture = captures.first(where: { $0.frame.intersects(model.selection) })
-        else { cancel(); return }
+        else { dismiss(); return }
         let crop = Geometry.cropRect(selection: model.selection,
                                      displayFrame: capture.frame, scale: capture.scale)
-        guard let image = capture.image.cropping(to: crop) else { cancel(); return }
+        guard let image = capture.image.cropping(to: crop) else { dismiss(); return }
         let result = CaptureResult(image: image, pointRect: model.selection, scale: capture.scale)
         teardown()
         if let onComplete { onComplete(result) }
         else { print("选区完成: \(image.width)x\(image.height) px") }
     }
 
-    private func cancel() { teardown() }
+    private func dismiss() { teardown() }
+
+    /// Public teardown entry used by SelectionRootView (e.g. color-pick click)
+    func cancelPublic() { dismiss() }
 
     @MainActor private func updateHover() {
         guard let model, model.phase == .picking, model.dragOrigin == nil else { return }
@@ -119,6 +123,14 @@ final class SelectionController {
         }
         if let hover = model.hoverRect {
             model.hoverRect = Geometry.clamped(hover, to: captures.first { $0.frame.intersects(hover) }?.frame ?? hover)
+        }
+        // 实时采色：取光标下像素的 HEX
+        if let capture = captures.first(where: { $0.frame.contains(p) }) {
+            let px = CGPoint(x: (p.x - capture.frame.minX) * capture.scale,
+                             y: (p.y - capture.frame.minY) * capture.scale)
+            if let c = PixelSampler.rgba(in: capture.image, atPixel: px) {
+                model.currentHex = PixelSampler.hexString(r: c.r, g: c.g, b: c.b)
+            }
         }
     }
 
