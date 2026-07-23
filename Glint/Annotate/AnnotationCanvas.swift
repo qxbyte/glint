@@ -4,6 +4,7 @@ import GlintKit
 struct AnnotationCanvas: View {
     @Bindable var model: SelectionModel
     let selectionLocal: CGRect     // 选区在本屏视图中的局部 rect
+    @FocusState private var textFieldFocused: Bool
 
     var body: some View {
         Canvas { ctx, _ in
@@ -113,9 +114,12 @@ struct AnnotationCanvas: View {
             .foregroundStyle(Color(cgColor: AnnotationRenderer.color(fromHex: editing.colorHex)))
             .frame(minWidth: 80)
             .offset(x: editing.rect.minX, y: editing.rect.minY)
+            .focused($textFieldFocused)
+            .onAppear { textFieldFocused = true }   // 面板已是 key window，仍需显式抢首响应者
             .onSubmit {
                 if let a = model.editingText, !a.text.isEmpty { model.stack.push(a) }
                 model.editingText = nil
+                textFieldFocused = false
             }
         }
     }

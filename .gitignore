@@ -5,3 +5,4 @@ GlintKit/.build/
 *.xcuserstate
 Glint/Info.plist
 GlintKit/.swiftpm/
+.superpowers/

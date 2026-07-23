@@ -8,9 +8,20 @@ struct SelectionRootView: View {
 
     let capture: DisplayCapture
     @Bindable var model: SelectionModel
+    @State private var toolbarSize: CGSize = .zero
 
     /// CG 全局点坐标 → 本视图局部坐标（面板恰好铺满该屏，两者仅差一个平移）
     private func local(_ r: CGRect) -> CGRect { r.offsetBy(dx: -capture.frame.minX, dy: -capture.frame.minY) }
+
+    /// 工具条位置：优先贴选区下缘，放不下则收进选区内；水平/垂直都钳制在屏幕内
+    private func toolbarOffset(for sel: CGRect) -> CGSize {
+        let w = toolbarSize.width > 0 ? toolbarSize.width : 560
+        let h = toolbarSize.height > 0 ? toolbarSize.height : 40
+        let x = max(8, min(sel.minX, capture.frame.width - w - 8))
+        let below = sel.maxY + 8
+        let y = below + h + 8 <= capture.frame.height ? below : max(8, sel.maxY - h - 8)
+        return CGSize(width: x, height: y)
+    }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -66,8 +77,8 @@ struct SelectionRootView: View {
                         onColor: { model.strokeColorHex = $0 },
                         onWidth: { model.strokeWidth = $0 }
                     )
-                    .offset(x: sel.minX,
-                            y: sel.maxY + 44 < capture.frame.height ? sel.maxY + 8 : sel.maxY - 44)
+                    .onGeometryChange(for: CGSize.self) { $0.size } action: { toolbarSize = $0 }
+                    .offset(toolbarOffset(for: sel))
                 }
             }
             // 放大镜（picking 阶段、光标在本屏时显示）
