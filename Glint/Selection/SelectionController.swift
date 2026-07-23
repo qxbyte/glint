@@ -76,7 +76,7 @@ final class SelectionController {
         switch event.keyCode {
         case 53: dismiss(); return true                       // Esc
         case 36, 76:                                          // Return / Enter
-            if model.phase == .adjusting { finishWithSelection() }
+            if model.phase == .adjusting { complete(.copy) }
             return true
         case 49:                                              // Space：循环模式
             model.cycleMode(); return true
@@ -89,17 +89,43 @@ final class SelectionController {
         }
     }
 
-    private func finishWithSelection() {
+    private func makeResult() -> CaptureResult? {
         guard let model, model.selection.width > 0,
               let capture = captures.first(where: { $0.frame.intersects(model.selection) })
-        else { dismiss(); return }
+        else { return nil }
         let crop = Geometry.cropRect(selection: model.selection,
                                      displayFrame: capture.frame, scale: capture.scale)
-        guard let image = capture.image.cropping(to: crop) else { dismiss(); return }
-        let result = CaptureResult(image: image, pointRect: model.selection, scale: capture.scale)
-        teardown()
+        guard let image = capture.image.cropping(to: crop) else { return nil }
+        return CaptureResult(image: image, pointRect: model.selection, scale: capture.scale)
+    }
+
+    func complete(_ action: ExitAction) {
+        guard let model, model.phase == .adjusting else { return }
+        guard let result = makeResult() else { dismiss(); return }
+        // 1. 历史先落库
+        try? AppDelegate.history.add(pngData: SaveService.pngData(from: result.image))
+        // 2. 动作
+        switch action {
+        case .copy:
+            ClipboardService.write(image: result.image)
+        case .save:
+            do { try SaveService.save(image: result.image) }
+            catch {
+                ClipboardService.write(image: result.image)   // 保底不丢图
+                Self.notify("保存失败，已复制到剪贴板：\(error.localizedDescription)")
+            }
+        case .pin: print("TODO Task 13: pin")   // Task 13 替换
+        case .ocr: print("TODO Task 14: ocr")   // Task 14 替换
+        }
+        // 3. 如有 onComplete 回调则调用（兼容旧路径）
         if let onComplete { onComplete(result) }
-        else { print("选区完成: \(image.width)x\(image.height) px") }
+        dismiss()
+    }
+
+    @MainActor static func notify(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.runModal()
     }
 
     func dismiss() { teardown() }

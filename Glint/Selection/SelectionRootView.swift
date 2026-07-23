@@ -42,6 +42,15 @@ struct SelectionRootView: View {
                     .glassEffect()
                     .offset(x: sel.minX, y: max(0, sel.minY - 26))
                     .allowsHitTesting(false)
+                // 玻璃工具条（adjusting 阶段）
+                if model.phase == .adjusting {
+                    GlassToolbar(
+                        onAction: { SelectionController.shared.complete($0) },
+                        onCancel: { SelectionController.shared.dismiss() }
+                    )
+                    .offset(x: sel.minX,
+                            y: sel.maxY + 44 < capture.frame.height ? sel.maxY + 8 : sel.maxY - 44)
+                }
             }
             // 放大镜（picking 阶段、光标在本屏时显示）
             if model.phase == .picking, capture.frame.contains(model.cursor) {
