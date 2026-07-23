@@ -47,8 +47,8 @@ struct SelectionRootView: View {
             if model.phase == .picking, capture.frame.contains(model.cursor) {
                 let c = local(CGRect(origin: model.cursor, size: .zero)).origin
                 MagnifierView(capture: capture, cursor: model.cursor, hex: model.currentHex)
-                    .offset(x: min(c.x + 20, capture.frame.width - 150),
-                            y: min(c.y + 20, capture.frame.height - 170))
+                    .offset(x: min(max(0, c.x + 20), capture.frame.width - 150),
+                            y: min(max(0, c.y + 20), capture.frame.height - 170))
                     .allowsHitTesting(false)
             }
         }
@@ -70,7 +70,7 @@ struct SelectionRootView: View {
                     if model.colorPickMode {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(model.currentHex, forType: .string)
-                        SelectionController.shared.cancelPublic()
+                        SelectionController.shared.dismiss()
                         return
                     }
                     let moved = hypot(v.translation.width, v.translation.height)

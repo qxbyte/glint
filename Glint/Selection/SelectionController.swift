@@ -102,10 +102,7 @@ final class SelectionController {
         else { print("选区完成: \(image.width)x\(image.height) px") }
     }
 
-    private func dismiss() { teardown() }
-
-    /// Public teardown entry used by SelectionRootView (e.g. color-pick click)
-    func cancelPublic() { dismiss() }
+    func dismiss() { teardown() }
 
     @MainActor private func updateHover() {
         guard let model, model.phase == .picking, model.dragOrigin == nil else { return }
@@ -142,6 +139,7 @@ final class SelectionController {
         panels.forEach { $0.orderOut(nil) }
         panels.removeAll()
         captures.removeAll()
+        model?.currentHex = ""
         model = nil
         NSCursor.arrow.set()
     }
