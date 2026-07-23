@@ -9,7 +9,7 @@ extension KeyboardShortcuts.Name {
 }
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     static var history: HistoryStore!
     var onboardingWindow: NSWindow?
 
@@ -48,8 +48,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.title = "Glint 权限设置"
         window.styleMask = [.titled, .closable]
         window.center()
+        window.delegate = self
+        window.isReleasedWhenClosed = false
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         onboardingWindow = window
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        if (notification.object as? NSWindow) == onboardingWindow {
+            onboardingWindow = nil
+        }
     }
 }
