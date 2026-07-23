@@ -21,6 +21,7 @@ targets:
       path: Glint/Info.plist
       properties:
         CFBundleDisplayName: Glint
+        CFBundleIconFile: Glint      # Glint/Resources/Glint.icns
         LSUIElement: true            # 菜单栏常驻，无 Dock 图标
     settings:
       base:

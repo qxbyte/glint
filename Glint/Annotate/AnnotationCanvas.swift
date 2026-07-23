@@ -13,10 +13,12 @@ struct AnnotationCanvas: View {
             }
         }
         .frame(width: selectionLocal.width, height: selectionLocal.height)
-        .overlay(alignment: .topLeading) { textEditor }   // 在 offset 之前挂载：文字框与画布同坐标系
-        .offset(x: selectionLocal.minX, y: selectionLocal.minY)
         .contentShape(Rectangle())
         .gesture(drawGesture)
+        .overlay(alignment: .topLeading) { textEditor }
+        // 用 .position 而非 .offset：offset 只平移渲染、命中区仍留在布局原位（曾致
+        // 小选区标注手势全部失效）；position 真实移动布局 frame，命中区随视觉走
+        .position(x: selectionLocal.midX, y: selectionLocal.midY)
     }
 
     /// 根坐标系点 → 选区内标注坐标。手势使用具名根坐标系（.offset 视图的 .local
