@@ -83,6 +83,7 @@ struct SelectionRootView: View {
                                     y: v.location.y + capture.frame.minY)
                     model.cursor = g
                     if model.phase == .picking {
+                        if model.dragOrigin == nil { model.displayBounds = capture.frame }
                         if model.dragOrigin == nil { model.beginDrag(at: g) }
                         model.updateDrag(to: g)
                     }
@@ -98,6 +99,7 @@ struct SelectionRootView: View {
                     }
                     let moved = hypot(v.translation.width, v.translation.height)
                     if moved < 3, let hover = model.hoverRect {   // 视为单击：采纳悬停区域
+                        model.displayBounds = capture.frame
                         model.selection = Geometry.clamped(hover, to: model.displayBounds)
                         model.dragOrigin = nil
                         model.phase = .adjusting

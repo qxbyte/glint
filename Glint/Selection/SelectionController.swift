@@ -11,20 +11,24 @@ final class SelectionController {
     private var model: SelectionModel?
     private var keyMonitor: Any?
     private var hoverTask: Task<Void, Never>?
+    private var isPresenting = false
     private let windowDetector = WindowDetector()
     private let elementDetector = ElementDetector()
 
     func begin() {
-        guard panels.isEmpty else { return }   // 幂等
+        guard !isPresenting, panels.isEmpty else { return }   // 幂等
+        isPresenting = true
         Task {
             do {
                 let captures = try await CaptureService().captureAllDisplays()
                 self.present(captures)
             } catch CaptureError.noPermission {
+                isPresenting = false
                 if let delegate = NSApp.delegate as? AppDelegate {
                     delegate.showOnboarding()
                 }
             } catch {
+                isPresenting = false
                 NSSound.beep()
                 print("截屏失败: \(error.localizedDescription)")
             }
@@ -75,6 +79,14 @@ final class SelectionController {
 
     private func handleKey(_ event: NSEvent) -> Bool {
         guard let model else { return false }
+        // 文字标注输入中：除 Esc（取消编辑）外全部放行给 TextField
+        if model.editingText != nil {
+            if event.keyCode == 53 {
+                model.editingText = nil
+                return true
+            }
+            return false
+        }
         let step: CGFloat = event.modifierFlags.contains(.shift) ? 10 : 1
         switch event.keyCode {
         case 53: dismiss(); return true                       // Esc
@@ -195,5 +207,6 @@ final class SelectionController {
         model?.currentHex = ""
         model = nil
         NSCursor.arrow.set()
+        isPresenting = false
     }
 }

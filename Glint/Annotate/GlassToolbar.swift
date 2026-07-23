@@ -23,17 +23,17 @@ struct GlassToolbar: View {
             HStack(spacing: 2) {
                 // —— 标注工具组 ——
                 ForEach([
-                    ("rectangle", AnnotationTool.rectangle),
-                    ("circle", .ellipse),
-                    ("arrow.up.right", .arrow),
-                    ("pencil.line", .pencil),
-                    ("highlighter", .highlighter),
-                    ("textformat", .text),
-                    ("1.circle", .badge),
-                    ("squareshape.split.3x3", .mosaic),
-                    ("drop", .blur)
-                ], id: \.1) { symbol, tool in
-                    toolButton(symbol, tool.rawValue) { onToolSelect(tool) }
+                    ("rectangle", AnnotationTool.rectangle, "矩形"),
+                    ("circle", .ellipse, "椭圆"),
+                    ("arrow.up.right", .arrow, "箭头"),
+                    ("pencil.line", .pencil, "画笔"),
+                    ("highlighter", .highlighter, "荧光笔"),
+                    ("textformat", .text, "文字"),
+                    ("1.circle", .badge, "序号"),
+                    ("squareshape.split.3x3", .mosaic, "马赛克"),
+                    ("drop", .blur, "模糊")
+                ], id: \.1) { symbol, tool, name in
+                    toolButton(symbol, name) { onToolSelect(tool) }
                         .background(
                             selectedTool == tool
                                 ? AnyShapeStyle(.selection)

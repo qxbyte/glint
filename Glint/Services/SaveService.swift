@@ -2,7 +2,7 @@ import AppKit
 
 enum SaveService {
     static var saveDirectory: URL {
-        if let path = UserDefaults.standard.string(forKey: "savePath") {
+        if let path = UserDefaults.standard.string(forKey: "savePath"), !path.isEmpty {
             return URL(fileURLWithPath: (path as NSString).expandingTildeInPath)
         }
         return FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
