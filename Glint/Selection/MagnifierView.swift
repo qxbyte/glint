@@ -17,7 +17,9 @@ struct MagnifierView: View {
                 .interpolation(.none)
                 .scaleEffect(zoom, anchor: .topLeading)
                 .offset(x: -localPt.x * zoom + side / 2, y: -localPt.y * zoom + side / 2)
-                .frame(width: side, height: side)
+                // topLeading 对齐：默认 center 会把原始尺寸的 Image 居中塞进小框，
+                // 图像左上角偏离 (0,0)，上面的 offset 数学随之整体错位
+                .frame(width: side, height: side, alignment: .topLeading)
                 .clipped()
                 .overlay {   // 中心十字
                     Path { p in
