@@ -41,6 +41,3 @@ open build/Build/Products/Debug/Glint.app
 | C | 取色模式 |
 | 方向键 | 微调选区（Shift 键 ×10 像素） |
 | ⌘Z / ⇧⌘Z | 撤销 / 重做 |
-
-## 文档
-
