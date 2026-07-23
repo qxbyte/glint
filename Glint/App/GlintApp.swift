@@ -9,5 +9,9 @@ struct GlintApp: App {
             MenuContent()
         }
         .menuBarExtraStyle(.window)
+
+        Settings {
+            SettingsView()
+        }
     }
 }

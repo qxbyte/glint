@@ -1,9 +1,17 @@
 import AppKit
+import SwiftUI
 import GlintKit
+import KeyboardShortcuts
+
+extension KeyboardShortcuts.Name {
+    static let capture = Self("capture", default: .init(.f6))
+    static let pinClipboard = Self("pinClipboard", default: .init(.f7))
+}
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     static var history: HistoryStore!
+    var onboardingWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -11,7 +19,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let limit = UserDefaults.standard.object(forKey: "historyLimit") as? Int ?? 20
         Self.history = try! HistoryStore(directory: dir, limit: limit)
 
-        // 热键注册在 Task 14，权限引导在 Task 14
+        // 热键注册
+        KeyboardShortcuts.onKeyUp(for: .capture) { Task { @MainActor in SelectionController.shared.begin() } }
+        KeyboardShortcuts.onKeyUp(for: .pinClipboard) { Task { @MainActor in PinManager.shared.pinFromClipboard() } }
+
+        // 权限引导
+        if !PermissionCenter.screenGranted {
+            showOnboarding()
+        }
+
         if ProcessInfo.processInfo.environment["GLINT_TEST_CAPTURE"] == "1" {
             Task {
                 var lines: [String] = []
@@ -25,5 +41,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     .write(toFile: "/tmp/glint-capture-test.txt", atomically: true, encoding: .utf8)
             }
         }
+    }
+
+    func showOnboarding() {
+        let window = NSWindow(contentViewController: NSHostingController(rootView: OnboardingView()))
+        window.title = "Glint 权限设置"
+        window.styleMask = [.titled, .closable]
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        onboardingWindow = window
     }
 }

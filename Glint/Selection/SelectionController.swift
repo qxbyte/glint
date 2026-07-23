@@ -20,8 +20,12 @@ final class SelectionController {
             do {
                 let captures = try await CaptureService().captureAllDisplays()
                 self.present(captures)
+            } catch CaptureError.noPermission {
+                if let delegate = NSApp.delegate as? AppDelegate {
+                    delegate.showOnboarding()
+                }
             } catch {
-                NSSound.beep()   // Task 13 换成权限提示卡
+                NSSound.beep()
                 print("截屏失败: \(error.localizedDescription)")
             }
         }
@@ -134,7 +138,13 @@ final class SelectionController {
                 Self.notify("保存失败，已复制到剪贴板：\(error.localizedDescription)")
             }
         case .pin: break   // 上面已提前处理
-        case .ocr: print("TODO Task 14: ocr")   // Task 14 替换
+        case .ocr:
+            let image = result.image
+            Task {
+                let text = (try? await OCRService.recognize(in: image)) ?? ""
+                if text.isEmpty { Self.notify("未识别到文字") }
+                else { ClipboardService.write(text: text) }
+            }
         }
         dismiss()
     }
