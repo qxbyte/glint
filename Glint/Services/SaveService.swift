@@ -9,8 +9,8 @@ enum SaveService {
             .appendingPathComponent("Glint")
     }
 
-    static func pngData(from image: CGImage) -> Data {
-        NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) ?? Data()
+    static func pngData(from image: CGImage) -> Data? {
+        NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
     }
 
     @discardableResult
@@ -19,7 +19,10 @@ enum SaveService {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"
         let url = saveDirectory.appendingPathComponent("Glint-\(formatter.string(from: Date())).png")
-        try pngData(from: image).write(to: url)
+        guard let data = pngData(from: image) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        try data.write(to: url)
         return url
     }
 }

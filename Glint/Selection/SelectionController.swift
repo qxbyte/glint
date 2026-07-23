@@ -5,7 +5,6 @@ import GlintKit
 @MainActor
 final class SelectionController {
     static let shared = SelectionController()
-    var onComplete: ((CaptureResult) -> Void)?
 
     private var panels: [OverlayPanel] = []
     private var captures: [DisplayCapture] = []
@@ -103,7 +102,9 @@ final class SelectionController {
         guard let model, model.phase == .adjusting else { return }
         guard let result = makeResult() else { dismiss(); return }
         // 1. 历史先落库
-        try? AppDelegate.history.add(pngData: SaveService.pngData(from: result.image))
+        if let pngData = SaveService.pngData(from: result.image) {
+            try? AppDelegate.history.add(pngData: pngData)
+        }
         // 2. 动作
         switch action {
         case .copy:
@@ -117,8 +118,6 @@ final class SelectionController {
         case .pin: print("TODO Task 13: pin")   // Task 13 替换
         case .ocr: print("TODO Task 14: ocr")   // Task 14 替换
         }
-        // 3. 如有 onComplete 回调则调用（兼容旧路径）
-        if let onComplete { onComplete(result) }
         dismiss()
     }
 
