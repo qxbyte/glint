@@ -3,3 +3,5 @@ Glint.xcodeproj/
 GlintKit/.build/
 .DS_Store
 *.xcuserstate
+Glint/Info.plist
+GlintKit/.swiftpm/
