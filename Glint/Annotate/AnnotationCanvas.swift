@@ -12,10 +12,16 @@ struct AnnotationCanvas: View {
             }
         }
         .frame(width: selectionLocal.width, height: selectionLocal.height)
+        .overlay(alignment: .topLeading) { textEditor }   // 在 offset 之前挂载：文字框与画布同坐标系
         .offset(x: selectionLocal.minX, y: selectionLocal.minY)
         .contentShape(Rectangle())
         .gesture(drawGesture)
-        .overlay(alignment: .topLeading) { textEditor }
+    }
+
+    /// 根坐标系点 → 选区内标注坐标。手势使用具名根坐标系（.offset 视图的 .local
+    /// 语义不扣除偏移，曾导致标注整体偏移一个选区原点），此处显式换算。
+    private func toCanvas(_ p: CGPoint) -> CGPoint {
+        CGPoint(x: p.x - selectionLocal.minX, y: p.y - selectionLocal.minY)
     }
 
     private func draw(_ a: Annotation, in ctx: inout GraphicsContext) {
@@ -51,38 +57,41 @@ struct AnnotationCanvas: View {
     }
 
     private var drawGesture: some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .local)
+        DragGesture(minimumDistance: 0, coordinateSpace: .named(SelectionRootView.rootSpace))
             .onChanged { v in
                 guard let tool = model.activeTool else { return }
+                let start = toCanvas(v.startLocation)
+                let loc = toCanvas(v.location)
                 switch tool {
                 case .pencil, .highlighter:
                     if model.draft == nil {
-                        model.draft = Annotation(tool: tool, points: [v.startLocation],
+                        model.draft = Annotation(tool: tool, points: [start],
                                                  colorHex: model.strokeColorHex, lineWidth: model.strokeWidth)
                     }
-                    model.draft?.points.append(v.location)
+                    model.draft?.points.append(loc)
                 case .text, .badge:
                     break   // 点击型，onEnded 处理
                 default:
                     var a = model.draft ?? Annotation(tool: tool, colorHex: model.strokeColorHex,
                                                       lineWidth: model.strokeWidth)
                     a.rect = tool == .arrow
-                        ? CGRect(origin: v.startLocation,
-                                 size: CGSize(width: v.location.x - v.startLocation.x,
-                                              height: v.location.y - v.startLocation.y))
-                        : Geometry.rect(from: v.startLocation, to: v.location)
+                        ? CGRect(origin: start,
+                                 size: CGSize(width: loc.x - start.x,
+                                              height: loc.y - start.y))
+                        : Geometry.rect(from: start, to: loc)
                     model.draft = a
                 }
             }
             .onEnded { v in
                 guard let tool = model.activeTool else { return }
+                let loc = toCanvas(v.location)
                 switch tool {
                 case .text:
-                    let a = Annotation(tool: .text, rect: CGRect(origin: v.location, size: .zero),
+                    let a = Annotation(tool: .text, rect: CGRect(origin: loc, size: .zero),
                                        colorHex: model.strokeColorHex, lineWidth: model.strokeWidth)
                     model.editingText = a
                 case .badge:
-                    let a = Annotation(tool: .badge, rect: CGRect(origin: v.location, size: .zero),
+                    let a = Annotation(tool: .badge, rect: CGRect(origin: loc, size: .zero),
                                        badgeNumber: model.stack.nextBadgeNumber,
                                        colorHex: model.strokeColorHex, lineWidth: model.strokeWidth)
                     model.stack.push(a)

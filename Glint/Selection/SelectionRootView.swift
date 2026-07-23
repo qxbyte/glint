@@ -2,6 +2,10 @@ import SwiftUI
 import GlintKit
 
 struct SelectionRootView: View {
+    /// 具名根坐标系：AnnotationCanvas 的手势以此为基准显式换算，
+    /// 规避 .offset 视图下 .local 手势坐标不扣除偏移的语义陷阱
+    static let rootSpace = "glintSelectionRoot"
+
     let capture: DisplayCapture
     @Bindable var model: SelectionModel
 
@@ -75,6 +79,8 @@ struct SelectionRootView: View {
                     .allowsHitTesting(false)
             }
         }
+        .coordinateSpace(name: Self.rootSpace)
+        .pointerStyle(model.phase == .picking ? .rectSelection : .default)
         .contentShape(Rectangle())
         .gesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
