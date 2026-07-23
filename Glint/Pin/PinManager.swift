@@ -28,6 +28,7 @@ final class PinManager {
     }
 
     private func makePanel(image: CGImage, scale: CGFloat, frame: NSRect) {
+        panels.removeAll { !$0.isVisible }   // 顺手清理已关闭的
         let panel = PinPanel(contentRect: frame)
         panel.baseSize = frame.size
         panel.contentView = NSHostingView(rootView: PinContentView(
@@ -37,7 +38,6 @@ final class PinManager {
         ))
         panel.orderFrontRegardless()
         panels.append(panel)
-        panels.removeAll { !$0.isVisible }   // 顺手清理已关闭的
     }
 
     func closeAll() { panels.forEach { $0.orderOut(nil) }; panels.removeAll() }
