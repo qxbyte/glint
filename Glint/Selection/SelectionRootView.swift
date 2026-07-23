@@ -42,11 +42,25 @@ struct SelectionRootView: View {
                     .glassEffect()
                     .offset(x: sel.minX, y: max(0, sel.minY - 26))
                     .allowsHitTesting(false)
+                // 标注画布（adjusting 阶段）
+                if model.phase == .adjusting {
+                    AnnotationCanvas(model: model, selectionLocal: sel)
+                        .allowsHitTesting(model.activeTool != nil)
+                }
                 // 玻璃工具条（adjusting 阶段）
                 if model.phase == .adjusting {
                     GlassToolbar(
                         onAction: { SelectionController.shared.complete($0) },
-                        onCancel: { SelectionController.shared.dismiss() }
+                        onCancel: { SelectionController.shared.dismiss() },
+                        selectedTool: model.activeTool,
+                        onToolSelect: { tool in
+                            model.activeTool = (tool == model.activeTool ? nil : tool)
+                        },
+                        onUndo: { model.stack.undo() },
+                        onRedo: { model.stack.redo() },
+                        currentColorHex: model.strokeColorHex,
+                        onColor: { model.strokeColorHex = $0 },
+                        onWidth: { model.strokeWidth = $0 }
                     )
                     .offset(x: sel.minX,
                             y: sel.maxY + 44 < capture.frame.height ? sel.maxY + 8 : sel.maxY - 44)

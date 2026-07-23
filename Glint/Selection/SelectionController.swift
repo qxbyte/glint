@@ -84,6 +84,16 @@ final class SelectionController {
         case 124: model.nudge(dx: step, dy: 0); return true   // →
         case 125: model.nudge(dx: 0, dy: step); return true   // ↓
         case 126: model.nudge(dx: 0, dy: -step); return true  // ↑
+        case 6:                                                // Z
+            if event.modifierFlags.contains(.command) {
+                if event.modifierFlags.contains(.shift) {
+                    model.stack.redo()
+                } else {
+                    model.stack.undo()
+                }
+                return true
+            }
+            return false
         default: return false
         }
     }
@@ -94,7 +104,10 @@ final class SelectionController {
         else { return nil }
         let crop = Geometry.cropRect(selection: model.selection,
                                      displayFrame: capture.frame, scale: capture.scale)
-        guard let image = capture.image.cropping(to: crop) else { return nil }
+        guard var image = capture.image.cropping(to: crop) else { return nil }
+        if !model.stack.items.isEmpty {
+            image = AnnotationRenderer.render(base: image, annotations: model.stack.items, scale: capture.scale)
+        }
         return CaptureResult(image: image, pointRect: model.selection, scale: capture.scale)
     }
 
