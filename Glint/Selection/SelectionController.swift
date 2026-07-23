@@ -118,7 +118,12 @@ final class SelectionController {
         if let pngData = SaveService.pngData(from: result.image) {
             try? AppDelegate.history.add(pngData: pngData)
         }
-        // 2. 动作
+        // 2. 动作（.pin 需要先 dismiss 蒙层再贴图，否则蒙层压在贴图之上）
+        if action == .pin {
+            dismiss()
+            PinManager.shared.pin(result)
+            return
+        }
         switch action {
         case .copy:
             ClipboardService.write(image: result.image)
@@ -128,7 +133,7 @@ final class SelectionController {
                 ClipboardService.write(image: result.image)   // 保底不丢图
                 Self.notify("保存失败，已复制到剪贴板：\(error.localizedDescription)")
             }
-        case .pin: print("TODO Task 13: pin")   // Task 13 替换
+        case .pin: break   // 上面已提前处理
         case .ocr: print("TODO Task 14: ocr")   // Task 14 替换
         }
         dismiss()
