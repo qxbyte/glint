@@ -30,7 +30,7 @@ final class SelectionController {
         let model = SelectionModel()
         self.model = model
         let primaryHeight = NSScreen.screens.first(where: { $0.frame.origin == .zero })?.frame.height
-            ?? NSScreen.main!.frame.height
+            ?? NSScreen.screens.first?.frame.height ?? 800
 
         for capture in captures {
             let appKitFrame = Geometry.flipped(capture.frame, primaryHeight: primaryHeight)
@@ -41,7 +41,7 @@ final class SelectionController {
         }
         // 起始屏 = 当前鼠标所在屏
         let mouse = mouseInCG(primaryHeight: primaryHeight)
-        model.displayBounds = captures.first { $0.frame.contains(mouse) }?.frame ?? captures[0].frame
+        model.displayBounds = captures.first { $0.frame.contains(mouse) }?.frame ?? captures.first?.frame ?? .zero
         model.cursor = mouse
 
         panels.first?.makeKey()
@@ -49,7 +49,8 @@ final class SelectionController {
         NSCursor.crosshair.set()
 
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleKey(event) == true ? nil : event
+            assert(Thread.isMainThread, "keyMonitor closure must run on main thread")
+            return (self?.handleKey(event) == true) ? nil : event
         }
     }
 
